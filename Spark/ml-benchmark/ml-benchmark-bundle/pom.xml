@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>de.tuberlin.dima</groupId>
+        <artifactId>ml-benchmark</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>ml-benchmark-bundle</artifactId>
+    <packaging>pom</packaging>
+
+    <repositories>
+        <!-- Required for the MonetDB JDBC driver -->
+        <repository>
+            <id>clojars.org</id>
+            <url>http://clojars.org/repo</url>
+        </repository>
+    </repositories>
+
+    <properties>
+        <!-- MonetDB JDBC driver -->
+        <monetdb.version>2.19</monetdb.version>
+        <!-- PostgreSQL driver -->
+        <postgresql.version>9.4.1208</postgresql.version>
+        <!-- bundle binaries parent folder -->
+        <bundle.bin>ml-bench_spark/bin/</bundle.bin>
+        <!-- Assembly file path -->
+        <assembly.descriptor>src/main/assembly/bundle.prod.xml</assembly.descriptor>
+    </properties>
+
+    <dependencies>
+        <!-- bundle jars -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ml-benchmark-peelextensions</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ml-benchmark-spark-jobs</artifactId>
+        </dependency>
+
+        <!-- Peel -->
+        <dependency>
+            <groupId>org.peelframework</groupId>
+            <artifactId>peel-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.peelframework</groupId>
+            <artifactId>peel-extensions</artifactId>
+        </dependency>
+
+        <!-- MonetDB JDBC driver -->
+        <dependency>
+            <groupId>monetdb</groupId>
+            <artifactId>monetdb-jdbc</artifactId>
+            <version>${monetdb.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- PostgreSQL JDBC driver -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Assemble jar -->
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.5.5</version>
+                <executions>
+                    <execution>
+                        <id>generate-package</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <finalName>${project.parent.artifactId}</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <attach>false</attach>
+                    <descriptors>
+                        <descriptor>${assembly.descriptor}</descriptor>
+                    </descriptors>
+                </configuration>
+            </plugin>
+
+            <!-- Deploy assembly to ${bundle.bin} -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>deploy-package</id>
+                        <phase>deploy</phase>
+                        <configuration>
+                            <tasks if="bundle.bin">
+                                <mkdir dir="${bundle.bin}" />
+                                <exec executable="cp">
+                                    <arg value="-R" />
+                                    <arg value="./target/${project.parent.artifactId}" />
+                                    <arg value="${bundle.bin}" />
+                                </exec>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>dev</id>
+
+            <properties>
+                <!-- Assembly file path (assemble without the linked folders) -->
+                <assembly.descriptor>src/main/assembly/bundle.dev.xml</assembly.descriptor>
+            </properties>
+
+            <build>
+                <plugins>
+                    <!-- Link 'config', 'datasets', and 'utils' -->
+                    <plugin>
+                        <groupId>com.pyx4j</groupId>
+                        <artifactId>maven-junction-plugin</artifactId>
+                        <version>1.0.3</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>link</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>unlink</id>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>unlink</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <links>
+                                <!-- link config directory -->
+                                <link>
+                                    <src>${basedir}/src/main/resources/config</src>
+                                    <dst>${project.build.directory}/${project.parent.artifactId}/config</dst>
+                                </link>
+                                <!-- link datasets directory -->
+                                <link>
+                                    <src>${basedir}/src/main/resources/datasets</src>
+                                    <dst>${project.build.directory}/${project.parent.artifactId}/datasets</dst>
+                                </link>
+                                <!-- link utils directory  -->
+                                <link>
+                                    <src>${basedir}/src/main/resources/utils</src>
+                                    <dst>${project.build.directory}/${project.parent.artifactId}/utils</dst>
+                                </link>
+                            </links>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
