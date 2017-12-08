@@ -3,6 +3,7 @@
 This repository contains the code used in the experiments of the [paper](http://learningsys.org/nips17/assets/papers/paper_21.pdf) presented at the [Workshop on ML Systems
 at NIPS 2017](http://learningsys.org/nips17/). 
 
+**Contact:** christoph.boden(ät)tu-berlin.de
 
 #### Motivation
 
